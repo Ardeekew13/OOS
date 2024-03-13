@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Image, FlatList, ScrollView,TouchableOpacity } from "react-native";
+import { View, Text, Image, FlatList, ScrollView, TouchableOpacity } from "react-native";
 import { getDocs, collection } from "firebase/firestore";
 import app from "./firebaseConfig"; // Adjust the path to your firebaseConfig file
 import { getFirestore } from "firebase/firestore";
@@ -69,7 +69,7 @@ const handleSeaPress = () => {
             </View>
           </View>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleShellPress}>
+          <TouchableOpacity onPress={handleSquidPress}>
           <View>
           <Image
             className="w-full h-60 rounded-t-xl"
@@ -81,7 +81,7 @@ const handleSeaPress = () => {
           </View>
         </View>
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleShellPress}>
+        <TouchableOpacity onPress={handleSeaPress}>
         <View>
         <Image
           className="w-full h-60 rounded-t-xl"

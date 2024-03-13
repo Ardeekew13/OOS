@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, Image, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import { getDocs, collection, query, where } from 'firebase/firestore';
 import app from './firebaseConfig';
 import { getFirestore } from 'firebase/firestore';
 import { getDownloadURL, ref, getStorage } from 'firebase/storage';
 import Entypo from '@expo/vector-icons/Entypo';
+import { useNavigation } from "@react-navigation/native";
+
 
 const db = getFirestore(app);
 const storage = getStorage(app);
 
 function SeaProducts({ category }) {
   const [seaData, setSeaData] = useState([]);
+  const navigation = useNavigation();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,6 +62,10 @@ function SeaProducts({ category }) {
         <View className="flex flex-row justify-center items-center gap-2 flex-wrap rounded-t">
           {seaData.length > 0 ? (
             seaData.map((item) => (
+              <TouchableOpacity
+              key={item.id}
+              onPress={() => navigateToProductDetails(item)}
+            >
               <View key={item.id} className="p-2">
                 {item.image ? (
                   <Image
@@ -79,6 +86,7 @@ function SeaProducts({ category }) {
                   </View>
                 </View>
               </View>
+              </TouchableOpacity>
             ))
           ) : (
             <Text>Loading...</Text>
