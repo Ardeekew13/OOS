@@ -13,8 +13,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import { db,authentication,storage} from './firebaseConfig';
-import {createUserWithEmailAndPassword,getAuth } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db } from './firebaseConfig';
 
 export default function Registration() {
   const [fname, setFname] = useState("");
@@ -22,17 +23,33 @@ export default function Registration() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const navigation=useNavigation()
-  const auth=getAuth();
+  const [mobile, setMobile] = useState("");
+  const navigation = useNavigation();
+  const auth = getAuth();
+
   const handleRegisterPress = async () => {
     try {
-      // Create a user with email and password
-      await createUserWithEmailAndPassword(auth, email, password);
+      if (password !== confirmPassword) {
+        console.error("Passwords do not match");
+        return;
+      }
 
-      console.log('Succesful')
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Save user information to Firestore
+      await setDoc(doc(db, "Users", user.uid), {
+        Fname: fname,
+        Lname: lname,
+        email: email,
+        mobile: mobile,
+        created_at: serverTimestamp(),
+        type:"buyer"
+      });
+
+      console.log('Registration successful');
     } catch (error) {
       console.error("Error registering user:", error.message);
-      // Handle the error appropriately (e.g., show an error message)
     }
   };
 
@@ -40,14 +57,16 @@ export default function Registration() {
     navigation.navigate("Login");
   };
 
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView>
-          <SafeAreaView className="flex">
-            <View className="bg-[#FFFAFA] h-screen flex ">
+        <ScrollView contentContainerClassName="flex-grow">
+          <SafeAreaView className="flex-1 bg-[#FFFAFA]">
+            <View className="flex-1">
               <Image
                 className="w-full h-60"
                 source={require("./Images/Login2.png")}
@@ -69,7 +88,7 @@ export default function Registration() {
                   <Text className="font-bold my-2">Last Name</Text>
                   <TextInput
                     className="border-2 px-2 py-1 rounded-[15px] mb-2 h-12 "
-                    placeholder="Enter your Last name"
+                    placeholder="Enter your last name"
                     value={lname}
                     onChangeText={(lname) => setLname(lname)}
                   />
@@ -78,16 +97,27 @@ export default function Registration() {
                   <Text className="font-bold my-2">Email</Text>
                   <TextInput
                     className="border-2 px-2 py-1 rounded-[15px] mb-2 h-12 "
-                    placeholder="Enter your Email Address"
+                    placeholder="Enter your email address"
                     value={email}
                     onChangeText={(email) => setEmail(email)}
                   />
                 </View>
                 <View>
-                  <Text className="font-bold my-2">Password</Text>
+                  <Text className="font-bold my-2">Mobile Number</Text>
                   <TextInput
                     className="border-2 px-2 py-1 rounded-[15px] mb-2 h-12 "
-                    placeholder="Enter your Password"
+                    placeholder="Enter your mobile number"
+                    value={mobile}
+                    onChangeText={(mobile) => setMobile(mobile)}
+                    keyboardType="phone-pad"
+                  />
+                </View>
+                <View>
+                  <Text className="font-bold my-2">Password</Text>
+                  <TextInput
+                    secureTextEntry
+                    className="border-2 px-2 py-1 rounded-[15px] mb-2 h-12 "
+                    placeholder="Enter your password"
                     value={password}
                     onChangeText={(password) => setPassword(password)}
                   />
@@ -95,25 +125,25 @@ export default function Registration() {
                 <View>
                   <Text className="font-bold my-2">Confirm Password</Text>
                   <TextInput
-                    className="border-2 px-2 py-1 rounded-[15px] h-12 "
-                    placeholder="Confirm Password"
+                    secureTextEntry
+                    className="border-2 px-2 py-1 rounded-[15px] mb-2 h-12 "
+                    placeholder="Confirm your password"
                     value={confirmPassword}
-                    onChangeText={(confirmPassword) =>
-                      setConfirmPassword(confirmPassword)
-                    }
+                    onChangeText={(confirmPassword) => setConfirmPassword(confirmPassword)}
                   />
                 </View>
                 <View>
-                  <TouchableOpacity className="bg-[#24255F]  rounded-full mt-5 h-12 flex justify-center" onPress={handleRegisterPress}>
+                  <TouchableOpacity className="bg-[#24255F] rounded-full mt-5 h-12 flex justify-center" onPress={handleRegisterPress}>
                     <Text className="text-white text-center ">Register</Text>
                   </TouchableOpacity>
                 </View>
-                <Text className=" my-2 text-center mt-2">
-                  Already have an account?
+                <View className="flex-row justify-center mb-20 mt-5">
+                  <Text className="text-center flex">
+                    Already have an account? </Text>
                   <TouchableOpacity onPress={handleLogInPress}>
-                    <Text className="font-bold underline"> Log in here</Text>
+                    <Text className="font-bold underline">Log in here</Text>
                   </TouchableOpacity>
-                </Text>
+                </View>
               </View>
             </View>
           </SafeAreaView>
