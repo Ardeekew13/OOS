@@ -12,15 +12,18 @@ import ShellProducts from './Screens/ShellProducts';
 import SquidProducts from './Screens/SquidProducts';
 import SeaProducts from './Screens/SeaProducts';
 import ProductDetails from './Screens/ProductDetails';
-
-
+import Carts from './Screens/Carts';
+import { Provider } from 'react-redux';
+import { createStore } from 'redux';
+import store from './Screens/store';
+import authReducer from './Screens/authReducer';
 const Stack = createNativeStackNavigator();
 
 
 export default function App() {
   return (
+    <Provider store={store}>
     <NavigationContainer>
- 
     <Stack.Navigator screenOptions={{headerShown:false}}>
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Registration" component={Registration} />
@@ -30,9 +33,10 @@ export default function App() {
       <Stack.Screen name="SquidProducts" component={SquidProducts} />
       <Stack.Screen name="SeaProducts" component={SeaProducts} />
       <Stack.Screen name="ProductDetails" component={ProductDetails} />
+      <Stack.Screen name="Carts" component={Carts} />
     </Stack.Navigator>
-
     </NavigationContainer>
+    </Provider>
   );
 }
 

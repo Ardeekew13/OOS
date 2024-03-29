@@ -13,44 +13,48 @@ function Home() {
   const [productData, setProductData] = useState([]);
 
   useEffect(() => {
-    
     const fetchData = async () => {
       try {
         const productsRef = collection(db, "Products");
         const snapshot = await getDocs(productsRef);
-
+  
         const data = [];
         for (const doc of snapshot.docs) {
           const product = doc.data();
-
+  
           // Fetch the download URL for the image using the correct storage object
           const storageRef = ref(storage, product.image);
           const imageURL = await getDownloadURL(storageRef);
-
+  
           data.push({
             id: doc.id,
             ...product,
             image: imageURL,
           });
         }
-
-        setProductData(data);
+  
+        // Sort products by Sales in descending order
+        const sortedData = data.sort((a, b) => b.Sales - a.Sales);
+  
+        // Take only the top 3 products
+        const top3Products = sortedData.slice(0, 3);
+  
+        setProductData(top3Products);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
     };
-
+  
     fetchData();
   }, []);
+  
 
   return (
     <ScrollView>
     <SafeAreaView>
       <View>
         <View className="bg-[#24255F] h-28">
-          <View className="bg-[#ffffff] h-7 w-72 top-10 flex justify-center mx-auto rounded-[24px] pl-5">
-            <Text className="">Search Product</Text>
-          </View>
+         
         </View>
         <View className="bg-[#ffffff] w-64 h-12 bottom-4 mx-auto rounded-md flex justify-center ">
           <Text className="text-center text-lg font-bold text-[#24255F] tracking-tight">

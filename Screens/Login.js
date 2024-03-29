@@ -21,18 +21,24 @@ import {
 import { signInWithEmailAndPassword, signOut, initializeAuth, getReactNativePersistence } from "firebase/auth";
 import { db, authentication } from "./firebaseConfig";
 import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
-
+import { useDispatch } from 'react-redux';
+import { setUser } from './authActions';
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigation = useNavigation();
+  const dispatch = useDispatch(); 
 
   const handleLoginPress = async () => {
     try {
       // Sign in with email and password
-      await signInWithEmailAndPassword(authentication, email, password);
-
+     const userCredentials = await signInWithEmailAndPassword(
+        authentication,
+        email,
+        password
+      );
+      dispatch(setUser(userCredentials.user));
       // Navigate to the Home screen upon successful login
       navigation.navigate("BottomTabs");
     } catch (error) {
