@@ -22,9 +22,8 @@ function Home() {
         for (const doc of snapshot.docs) {
           const product = doc.data();
   
-          // Fetch the download URL for the image using the correct storage object
-          const storageRef = ref(storage, product.image);
-          const imageURL = await getDownloadURL(storageRef);
+          // Use the image URL directly from the "image" field
+          const imageURL = product.image;
   
           data.push({
             id: doc.id,
@@ -47,6 +46,7 @@ function Home() {
   
     fetchData();
   }, []);
+  
   
 
   return (

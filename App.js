@@ -17,6 +17,7 @@ import { Provider } from 'react-redux';
 import { createStore } from 'redux';
 import store from './Screens/store';
 import authReducer from './Screens/authReducer';
+import Checkout from './Screens/Checkout';
 const Stack = createNativeStackNavigator();
 
 
@@ -33,6 +34,7 @@ export default function App() {
       <Stack.Screen name="SquidProducts" component={SquidProducts} />
       <Stack.Screen name="SeaProducts" component={SeaProducts} />
       <Stack.Screen name="ProductDetails" component={ProductDetails} />
+      <Stack.Screen name="Checkout" component={Checkout} />
       <Stack.Screen name="Carts" component={Carts} />
     </Stack.Navigator>
     </NavigationContainer>
