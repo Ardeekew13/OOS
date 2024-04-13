@@ -85,7 +85,7 @@ function ShellProducts({ category }) {
                   <View className="bg-white h-16 rounded-b-xl">
                     <Text className="text-center mt-1 font-semibold">{item.product_Name}</Text>
                     <Text className="ml-2 mt-1 font-extrabold">₱{item.Price}</Text>
-                    <View className="left-24 bottom-4 flex flex-row px-4">
+                    <View className="left-16 bottom-4 flex flex-row px-4">
                       <Entypo name="star" size={12} color="yellow" />
                       <Text className="text-xs font-bold">{item.Sales}sold</Text>
                     </View>

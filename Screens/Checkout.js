@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useSelector } from 'react-redux'; // Assuming you're using Redux
-import {  getFirestore, doc, updateDoc, addDoc, collection,getDoc  } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
 import { useNavigation } from "@react-navigation/native";
+import { getAuth } from 'firebase/auth';
 
 const Checkout = ({ route }) => {
   const { selectedItems, totalPrice } = route.params;
@@ -14,40 +15,104 @@ const Checkout = ({ route }) => {
   const [address, setAddress] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [hasDeliveryInfo, setHasDeliveryInfo] = useState(false);
+  const [loading, setLoading] = useState(false); // State variable for activity indicator
 
-  // Fetch delivery information if available
+  useEffect(() => {
+    // Check if the mobile field is empty or doesn't exist in the user data
+    if (!user || !user.mobile) {
+      // Mobile field is empty or doesn't exist, ask for phone number
+      setHasDeliveryInfo(true);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    // Check if the user has delivery information available
+    const fetchDeliveryInfo = async () => {
+      try {
+        if (user && user.uid) {
+          const userRef = doc(firestore, 'Users', user.uid); // Document reference for the current user
+          const userDoc = await getDoc(userRef); // Get document snapshot for the user document
+
+          if (userDoc.exists()) {
+            const userData = userDoc.data(); // Extract user data
+            const deliveryInfo = userData.deliveryInfo; // Extract deliveryInfo from user data
+            if (deliveryInfo && userData.mobile) {
+              setAddress(deliveryInfo.address);
+              setPhoneNumber(userData.mobile); // Assuming mobile number is stored in the 'mobile' field
+              setHasDeliveryInfo(true); // Set deliveryInfo to true
+            } else {
+              setHasDeliveryInfo(false); // Set deliveryInfo to false
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching delivery info:', error);
+      }
+    };
+
+    fetchDeliveryInfo();
+  }, [user, firestore]);
+
   // Function to handle checkout
   const handleCheckout = async () => {
+    setLoading(true); // Show activity indicator while processing order
     try {
       const firestore = getFirestore(); // Get Firestore instance
+      const auth = getAuth(); // Get authentication methods from Firebase
+  
+      const currentUser = auth.currentUser; // Get current user from Firebase Auth
+  
+      if (!currentUser) {
+        console.error('No user logged in.');
+        return;
+      }
   
       // Initialize an array to store batched writes
       const batch = [];
   
-      // Update quantity selected and increment sales for each product in the cart
-      selectedItems.forEach(async (item) => {
-        const productRef = doc(firestore, 'Products', item.id);
-        const newQty = item.qtyAvailable - item.qtyOrdered; // Deduct quantity ordered from available quantity
-        const newSales = item.Sales + 1; // Increment sales by 1
-  
-        // Create batched writes for each product update
-        batch.push(updateDoc(productRef, { qtyAvailable: newQty, Sales: newSales }));
-      });
-  
       // Remove checked-out items from the user's cart in Firestore if cart exists
-      const userRef = doc(firestore, 'Users', user.uid);
+      const userRef = doc(firestore, 'Users', currentUser.uid);
       const userSnapshot = await getDoc(userRef);
       if (userSnapshot.exists()) {
         const userData = userSnapshot.data();
-        if (userData.myCart) {
+        if (userData && userData.myCart) {
           const updatedCart = userData.myCart.filter((cartItem) => {
             return !selectedItems.some((selectedItem) => selectedItem.id === cartItem.id);
           });
   
+          // Extract first name and last name from userData
+          const { Fname, Lname } = userData;
+  
           // Update user document with the filtered cart items
           batch.push(updateDoc(userRef, { myCart: updatedCart }));
+  
+  
+          // Calculate total price including delivery fee
+          const totalWithDelivery = totalPrice + 50;
+  
+          // Create a new order document in the "Orders" collection
+          const orderRef = await addDoc(collection(firestore, 'Orders'), {
+            userID: currentUser.uid, // User ID
+            firstName: Fname || '', // First name from userData
+            lastName: Lname || '', // Last name from userData
+            items: selectedItems, // Selected items
+            quantityOrdered: selectedItems.reduce((acc, item) => acc + item.qtyOrdered, 0), // Total quantity ordered
+            totalPrice: totalWithDelivery, // Total price including delivery fee
+            deliveryFee: 50, // Delivery fee
+            deliveryInfo: { address, phoneNumber }, // Delivery information
+            createdAt: new Date(), // Timestamp for order creation
+            deliveryDate: new Date(), // Current date for delivery
+            status: 'Pending'
+          });
+  
+          console.log('Order placed successfully! Order ID:', orderRef.id);
+  
+          // Show alert when the order is successful
+          Alert.alert('Order Placed', 'Your order has been placed successfully!', [
+            { text: 'OK', onPress: () => navigation.navigate('Orders') }
+          ]);
         } else {
-          console.log('User has no cart items.');
+          console.log('User has no cart items or user data not available.');
         }
       } else {
         console.log('User document does not exist.');
@@ -55,44 +120,38 @@ const Checkout = ({ route }) => {
   
       // Execute batched writes
       await Promise.all(batch);
-  
-      // Create a new order document in the "Orders" collection
-      const orderRef = await addDoc(collection(firestore, 'Orders'), {
-        userId: user.uid, // User ID
-        items: selectedItems, // Selected items
-        totalPrice: totalPrice, // Total price
-        deliveryInfo: { address, phoneNumber }, // Delivery information
-        createdAt: new Date(), // Timestamp for order creation
-        status: 'Pending'
-      });
-  
-      console.log('Order placed successfully! Order ID:', orderRef.id);
-  
-      // After checkout, you can navigate to a success page or perform other actions
-      // For example:
-      // navigation.navigate('OrderConfirmation');
     } catch (error) {
       console.error('Error updating product quantities, removing cart items, and creating order:', error);
+    } finally {
+      setLoading(false); // Hide activity indicator after order processing
     }
   };
-  
+
   return (
     <ScrollView>
-      <View style={{ padding: 20 }}>
+      <View className="bg-[#24255F] h-28"></View>
+      <View className="bg-[#ffffff] w-64 h-12 bottom-4 mx-auto rounded-md flex justify-center ">
+        <Text className="text-center text-lg font-bold text-[#24255F] tracking-tight">Checkout</Text>
+      </View>
+      <View className="mx-2">
         <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 10 }}>Selected Items:</Text>
         {/* Display selected items */}
         {selectedItems.map((item) => (
-          <View key={item.id} style={{ marginBottom: 10 }}>
+          <View key={item.id} style={{ marginBottom: 10 }} className="flex flex-nowrap">
             <Text>{item.product_Name}</Text>
             <Text>Quantity: {item.qtyOrdered} kg</Text>
             <Text>Price: ₱{(item.Price * item.qtyOrdered).toFixed(2)}</Text>
           </View>
         ))}
-
-        <Text style={{ marginTop: 20, fontSize: 20, fontWeight: 'bold' }}>Total Price: ₱{totalPrice.toFixed(2)}</Text>
-
-        {/* Input fields for delivery address and phone number */}
-        {!hasDeliveryInfo && (
+        <Text className="font-bold text-xl">Delivery information</Text>
+        {hasDeliveryInfo ? (
+          <View>
+            <Text className="font-bold">Delivery Address:</Text>
+            <Text>{address}</Text>
+            <Text className="font-bold">Phone Number:</Text>
+            <Text>{phoneNumber}</Text>
+          </View>
+        ) : (
           <View>
             <TextInput
               style={{ marginTop: 20, padding: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 5 }}
@@ -101,14 +160,21 @@ const Checkout = ({ route }) => {
               onChangeText={setAddress}
             />
             <TextInput
-              style={{ marginTop: 10, padding: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 5 }}
+              style={{ marginTop: 20, padding: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 5 }}
               placeholder="Phone Number"
               value={phoneNumber}
               onChangeText={setPhoneNumber}
             />
           </View>
         )}
-
+        <Text className="mt-10 font-bold">Price: ₱{totalPrice.toFixed(2)}</Text>
+  
+        {/* Display delivery fee */}
+        <Text className="mt-2 font-bold text-lg">Delivery Fee: ₱50.00</Text>
+  
+        {/* Display total price including delivery fee */}
+        <Text className="mt-2 font-bold text-xl">Total Price: ₱{(totalPrice + 50).toFixed(2)}</Text>
+  
         {/* Checkout button */}
         <TouchableOpacity
           style={{
@@ -121,7 +187,11 @@ const Checkout = ({ route }) => {
           }}
           onPress={handleCheckout}
         >
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>Order Now</Text>
+          {loading ? (
+            <ActivityIndicator color="white" /> // Show activity indicator if loading
+          ) : (
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>Order Now</Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>

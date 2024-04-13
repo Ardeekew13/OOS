@@ -35,19 +35,25 @@ const Carts = () => {
       try {
         const userRef = doc(getFirestore(), 'Users', user.uid);
         const userDoc = await getDoc(userRef);
-
+  
         if (userDoc.exists() && userDoc.data().myCart) {
           // Set the cart products
           setCartProducts(userDoc.data().myCart);
         } else {
-          // User has no items in the cart
+          // User has no items in the cart or cart is not available in Firestore
           setCartProducts([]);
+          setSelectedItems([]); // Reset selected items when cart is empty
+          setTotalPrice(0); // Reset total price when cart is empty or not available
         }
       } catch (error) {
         console.error('Error fetching cart products:', error);
+        // Set total price to 0 if there's an error fetching cart products
+        setTotalPrice(0);
       }
     }
   }, [user]);
+  
+  
 
   useEffect(() => {
     fetchCartProducts();
@@ -120,11 +126,17 @@ const Carts = () => {
   };
 
   // Handle checkout button press
-  const handleCheckout = () => {
-    // Navigate to Checkout screen and pass selected items and total price
-    navigation.navigate('Checkout', { selectedItems, totalPrice });
-  };
+ const handleCheckout = async () => {
+  // Navigate to Checkout screen and pass selected items and total price
+  navigation.navigate('Checkout', { selectedItems, totalPrice });
 
+  // Reset selected items and total price after checking out
+  setSelectedItems([]);
+  setTotalPrice(0);
+
+  // Fetch cart products again to update the cart
+  await fetchCartProducts();
+};
   return (
     <ScrollView>
       <SafeAreaView>
