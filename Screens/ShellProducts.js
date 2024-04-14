@@ -1,94 +1,70 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
-import { getDocs, collection, query, where } from 'firebase/firestore';
-import app from './firebaseConfig';
-import { getFirestore } from 'firebase/firestore';
-import { getDownloadURL, ref, getStorage } from 'firebase/storage';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from './firebaseConfig';
 import Entypo from '@expo/vector-icons/Entypo';
-import { useNavigation } from "@react-navigation/native";
 
-const db = getFirestore(app);
-const storage = getStorage(app);
-
-function ShellProducts({ category }) {
-  const [shellData, setShellData] = useState([]);
+const ProductListing = () => {
+  const [products, setProducts] = useState([]);
   const navigation = useNavigation();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const productsRef = collection(db, 'Products');
-        const q = query(productsRef, where('Category', '==', 'Shellfish'));
-
-        const snapshot = await getDocs(q);
-
-        const data = [];
-        for (const doc of snapshot.docs) {
-          const product = doc.data();
-
-          const storageRef = ref(storage, product.image);
-          const imageURL = await getDownloadURL(storageRef);
-
-          data.push({
-            id: doc.id,
-            ...product,
-            image: imageURL,
-          });
-        }
-
-        setShellData(data);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
+    const fetchProducts = async () => {
+      const querySnapshot = await getDocs(collection(db, 'Products'));
+      const productsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setProducts(productsData);
     };
 
-    fetchData();
+    fetchProducts();
   }, []);
 
- const navigateToProductDetails = (product) => {
-    // Navigate to ProductDetails screen and pass the product data
-    navigation.navigate('ProductDetails', { product });
+  const navigateToProductDetails = (item) => {
+    // Navigate to product details screen with the selected item
+    navigation.navigate('ProductDetails', { productId: item.id });
   };
+
   return (
     <ScrollView>
       <SafeAreaView>
-      <View className="bg-[#24255F] h-28">
-      <View className="bg-[#ffffff] h-7 w-72 top-10 flex justify-center mx-auto rounded-[24px] pl-5">
-        <Text className="">Search Product</Text>
-      </View>
-    </View>
-    <View className="bg-[#ffffff] w-64 h-12 bottom-4 mx-auto rounded-md flex justify-center ">
-      <Text className="text-center text-lg font-bold text-[#24255F] tracking-tight">
-        Shellfish
-      </Text>
-    </View>
-        <View className="flex flex-row justify-center items-center gap-2 flex-wrap rounded-t">
-          {shellData.length > 0 ? (
-            shellData.map((item) => (
+        <View className="bg-[#24255F] h-28">
+          <View className="bg-[#ffffff] h-7 w-72 top-10 flex justify-center mx-auto rounded-[24px] pl-5">
+            <Text className="">Search Product</Text>
+          </View>
+        </View>
+        <View className="bg-[#ffffff] w-64 h-12 bottom-4 mx-auto rounded-md flex justify-center ">
+          <Text className="text-center text-lg font-bold text-[#24255F] tracking-tight">
+            Shellfish
+          </Text>
+        </View>
+        <View className="flex flex-row justify-center items-center flex-wrap rounded-t">
+          {products.length > 0 ? (
+            products.map((item) => (
               <TouchableOpacity
-              key={item.id}
-              onPress={() => navigateToProductDetails(item)}
-            >
-              <View key={item.id} className="p-2">
-                {item.image ? (
-                  <Image
-                    style={{ width: 165, height: 150 }}
-                    source={{ uri: item.image }}
-                    className="rounded-t-xl"
-                  />
-                ) : (
-                  <Text>No Image Available</Text>
-                )}
+                key={item.id}
+                onPress={() => navigateToProductDetails(item)}
+                style={{ width: '50%' }}
+              >
+                <View className="p-2">
+                  {item.image ? (
+                    <Image
+                      style={{ width: '100%', height: 150 }}
+                      source={{ uri: item.image }}
+                      className="rounded-t-xl"
+                    />
+                  ) : (
+                    <Text>No Image Available</Text>
+                  )}
 
-                <View className="bg-white h-16 rounded-b-xl">
-                  <Text className="text-center mt-1 font-semibold">{item.product_Name}</Text>
-                  <Text className="ml-2 mt-1 font-extrabold">₱{item.Price}</Text>
-                  <View className="left-24 bottom-4 flex flex-row px-4">
-                    <Entypo name="star" size={12} color="yellow" />
-                    <Text className="text-xs font-bold">{item.Sales}sold</Text>
+                  <View className="bg-white h-16 rounded-b-xl">
+                    <Text className="text-center mt-1 font-semibold">{item.product_Name}</Text>
+                    <Text className="ml-2 mt-1 font-extrabold">₱{item.price}</Text>
+                    <View className="left-16 bottom-4 flex flex-row px-4">
+                      <Entypo name="star" size={12} color="yellow" />
+                      <Text className="text-xs font-bold">{item.sales}sold</Text>
+                    </View>
                   </View>
                 </View>
-              </View>
               </TouchableOpacity>
             ))
           ) : (
@@ -98,6 +74,6 @@ function ShellProducts({ category }) {
       </SafeAreaView>
     </ScrollView>
   );
-}
+};
 
-export default ShellProducts;
+export default ProductListing;

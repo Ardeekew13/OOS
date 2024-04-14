@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
-import { useSelector } from 'react-redux'; // Assuming you're using Redux
+import { useSelector, useDispatch } from 'react-redux'; // Assuming you're using Redux and React Navigation
+import { useNavigation, useIsFocused } from '@react-navigation/native'; // Import useNavigation hook
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import Decimal from 'decimal.js';
+
+// Define CustomCheckbox component
 const CustomCheckbox = ({ checked, onPress }) => (
   <TouchableOpacity onPress={onPress} className="flex justify-center mr-2">
     <View
@@ -23,29 +26,38 @@ const Carts = () => {
   const [selectedItems, setSelectedItems] = useState([]);
   const user = useSelector((state) => state.auth.user); // Assuming you store user info in Redux
   const [totalPrice, setTotalPrice] = useState(0);
+  const navigation = useNavigation(); // Initialize navigation hook
+  const isFocused = useIsFocused(); // Initialize isFocused hook
+
+  // Fetch cart products function
+  const fetchCartProducts = useCallback(async () => {
+    if (user) {
+      try {
+        const userRef = doc(getFirestore(), 'Users', user.uid);
+        const userDoc = await getDoc(userRef);
+  
+        if (userDoc.exists() && userDoc.data().myCart) {
+          // Set the cart products
+          setCartProducts(userDoc.data().myCart);
+        } else {
+          // User has no items in the cart or cart is not available in Firestore
+          setCartProducts([]);
+          setSelectedItems([]); // Reset selected items when cart is empty
+          setTotalPrice(0); // Reset total price when cart is empty or not available
+        }
+      } catch (error) {
+        console.error('Error fetching cart products:', error);
+        // Set total price to 0 if there's an error fetching cart products
+        setTotalPrice(0);
+      }
+    }
+  }, [user]);
+  
+  
 
   useEffect(() => {
-    const fetchCartProducts = async () => {
-      if (user) {
-        try {
-          const userRef = doc(getFirestore(), 'Users', user.uid);
-          const userDoc = await getDoc(userRef);
-
-          if (userDoc.exists() && userDoc.data().myCart) {
-            // Set the cart products
-            setCartProducts(userDoc.data().myCart);
-          } else {
-            // User has no items in the cart
-            setCartProducts([]);
-          }
-        } catch (error) {
-          console.error('Error fetching cart products:', error);
-        }
-      }
-    };
-
     fetchCartProducts();
-  }, [user]);
+  }, [fetchCartProducts, isFocused]);
 
   // Calculate total price when cartProducts or the selectedItems state change
   useEffect(() => {
@@ -64,6 +76,7 @@ const Carts = () => {
 
     setTotalPrice(newTotalPrice);
   }, [selectedItems, cartProducts]);
+
   // Handle item selection toggle
   const handleItemToggle = (itemId) => {
     const updatedSelectedItems = [...selectedItems];
@@ -82,6 +95,8 @@ const Carts = () => {
 
     setSelectedItems(updatedSelectedItems);
   };
+
+  // Handle quantity change
   const handleQuantityChange = (itemId, quantity) => {
     const updatedCart = cartProducts.map((item) => {
       if (item.id === itemId) {
@@ -110,11 +125,22 @@ const Carts = () => {
     setCartProducts(updatedCart);
   };
 
+  // Handle checkout button press
+ const handleCheckout = async () => {
+  // Navigate to Checkout screen and pass selected items and total price
+  navigation.navigate('Checkout', { selectedItems, totalPrice });
+
+  // Reset selected items and total price after checking out
+  setSelectedItems([]);
+  setTotalPrice(0);
+
+  // Fetch cart products again to update the cart
+  await fetchCartProducts();
+};
   return (
     <ScrollView>
       <SafeAreaView>
         <View className="bg-[#24255F] h-28">
-         
         </View>
         <View className="bg-[#ffffff] w-64 h-12 bottom-4 mx-auto rounded-md flex justify-center ">
           <Text className="text-center text-lg font-bold text-[#24255F] tracking-tight">
@@ -164,10 +190,27 @@ const Carts = () => {
           <View className="p-2 bg-white rounded-lg mb-2 shadow-lg">
             <Text className="font-bold">Total Price: ₱{totalPrice}</Text>
           </View>
+
+          {/* Checkout button */}
+          {totalPrice > 0 && selectedItems.length > 0 && (
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#24255F',
+                padding: 16,
+                borderRadius: 8,
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginVertical: 8,
+              }}
+              onPress={handleCheckout}
+            >
+              <Text style={{ color: 'white', fontWeight: 'bold' }}>Checkout</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </SafeAreaView>
     </ScrollView>
   );
 };
 
-export default Carts;
+export default Carts; 

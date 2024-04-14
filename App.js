@@ -17,6 +17,13 @@ import { Provider } from 'react-redux';
 import { createStore } from 'redux';
 import store from './Screens/store';
 import authReducer from './Screens/authReducer';
+import Checkout from './Screens/Checkout';
+import SellerBottomTabs from './Screens/SellerBottomTabs';
+import ProductListing from './Screens/ProductListing';
+import Orderlist from './Screens/Orderlist';
+import EditProduct from './Screens/EditProduct';
+import AddProduct from './Screens/AddProduct';
+import OrderDetails from './Screens/OrderDetails';
 const Stack = createNativeStackNavigator();
 
 
@@ -28,11 +35,18 @@ export default function App() {
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Registration" component={Registration} />
       <Stack.Screen name="BottomTabs" component={BottomTabs} />
+      <Stack.Screen name="SellerBottomTabs" component={SellerBottomTabs} />
+      <Stack.Screen name="Products" component={ProductListing} />
+      <Stack.Screen name="Orders" component={Orderlist} />
+      <Stack.Screen name="OrderDetails" component={OrderDetails} />
+      <Stack.Screen name="Add Product" component={AddProduct} />
+      <Stack.Screen name="EditProduct" component={EditProduct} />
       <Stack.Screen name="FishProducts" component={FishProducts} />
       <Stack.Screen name="ShellProducts" component={ShellProducts} />
       <Stack.Screen name="SquidProducts" component={SquidProducts} />
       <Stack.Screen name="SeaProducts" component={SeaProducts} />
       <Stack.Screen name="ProductDetails" component={ProductDetails} />
+      <Stack.Screen name="Checkout" component={Checkout} />
       <Stack.Screen name="Carts" component={Carts} />
     </Stack.Navigator>
     </NavigationContainer>

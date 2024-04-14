@@ -5,45 +5,86 @@ import {
   View,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Platform,
   Keyboard,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import {
-  SafeAreaView,
-  SafeAreaProvider,
-  SafeAreaInsetsContext,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
-import { signInWithEmailAndPassword, signOut, initializeAuth, getReactNativePersistence } from "firebase/auth";
-import { db, authentication } from "./firebaseConfig";
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from "react-native-safe-area-context";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { db } from "./firebaseConfig";
 import { useDispatch } from 'react-redux';
 import { setUser } from './authActions';
+import { collection, doc, getDoc } from 'firebase/firestore';
+import { getAuth } from "firebase/auth";
+import { authentication } from './firebaseConfig';
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
   const dispatch = useDispatch(); 
+  const auth = getAuth();
 
   const handleLoginPress = async () => {
+    setLoading(true); // Set loading state to true during login process
     try {
+      // Check for empty email and password fields
+      if (!email || !password) {
+        Alert.alert('Invalid Input', 'Email and password cannot be empty.');
+        return;
+      }
+      
       // Sign in with email and password
-     const userCredentials = await signInWithEmailAndPassword(
+      const userCredentials = await signInWithEmailAndPassword(
         authentication,
         email,
         password
       );
-      dispatch(setUser(userCredentials.user));
-      // Navigate to the Home screen upon successful login
-      navigation.navigate("BottomTabs");
+  
+      const userId = userCredentials.user.uid; // Get the UID of the authenticated user
+  
+      // Construct a reference to the user document in Firestore using the UID
+      const userDocRef = doc(db, 'Users', userId);
+      const userDocSnapshot = await getDoc(userDocRef);
+  
+      if (userDocSnapshot.exists()) {
+        // User document exists, retrieve its data
+        const userData = userDocSnapshot.data();
+        const userType = userData.type;
+        
+        // Dispatch user data to Redux
+        dispatch(setUser(userCredentials.user));
+        
+        // Navigate based on user type
+        if (userType === 'Buyer') {
+          navigation.navigate('BottomTabs'); // Navigate to Buyer bottom tabs
+        } else if (userType === 'Seller') {
+          navigation.navigate('SellerBottomTabs'); // Navigate to Seller bottom tabs
+        } else {
+          // Handle other user types or scenarios
+        }
+      } else {
+        console.log("User document not found");
+        Alert.alert('Login Error', 'User document not found.');
+        // Handle scenario where user document doesn't exist
+      }
     } catch (error) {
       console.error("Error logging in:", error.message);
       // Handle the error appropriately (e.g., show an error message)
+      let errorMessage = "Invalid Email or Password";
+      if (error.code === "auth/user-not-found") {
+        errorMessage = "User not found. Please check your email.";
+      } else if (error.code === "auth/wrong-password") {
+        errorMessage = "Incorrect password. Please try again.";
+      }
+      Alert.alert('Login Error', errorMessage);
+    } finally {
+      setLoading(false); // Set loading state back to false after login attempt
     }
   };
 
@@ -99,6 +140,11 @@ export default function Login() {
           </View>
         </SafeAreaView>
       </TouchableWithoutFeedback>
+      {loading && (
+        <View className="absolute w-full h-full flex justify-center items-center bg-black opacity-25">
+          <ActivityIndicator size="large" color="#0000ff" />
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }

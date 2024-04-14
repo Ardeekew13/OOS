@@ -7,7 +7,6 @@ import { getDownloadURL, ref, getStorage } from 'firebase/storage';
 import Entypo from '@expo/vector-icons/Entypo';
 import { useNavigation } from "@react-navigation/native";
 
-
 const db = getFirestore(app);
 const storage = getStorage(app);
 
@@ -46,6 +45,10 @@ function SeaProducts({ category }) {
     fetchData();
   }, []);
 
+  const navigateToProductDetails = (product) => {
+    navigation.navigate('ProductDetails', { product });
+  };
+
   return (
     <ScrollView>
       <SafeAreaView>
@@ -63,29 +66,29 @@ function SeaProducts({ category }) {
           {seaData.length > 0 ? (
             seaData.map((item) => (
               <TouchableOpacity
-              key={item.id}
-              onPress={() => navigateToProductDetails(item)}
-            >
-              <View key={item.id} className="p-2">
-                {item.image ? (
-                  <Image
-                    style={{ width: 165, height: 150 }}
-                    source={{ uri: item.image }}
-                    className="rounded-t-xl"
-                  />
-                ) : (
-                  <Text>No Image Available</Text>
-                )}
+                key={item.id}
+                onPress={() => navigateToProductDetails(item)}
+              >
+                <View key={item.id} className="p-2">
+                  {item.image ? (
+                    <Image
+                      style={{ width: 165, height: 150 }}
+                      source={{ uri: item.image }}
+                      className="rounded-t-xl"
+                    />
+                  ) : (
+                    <Text>No Image Available</Text>
+                  )}
 
-                <View className="bg-white h-16 rounded-b-xl">
-                  <Text className="text-center mt-1 font-semibold">{item.product_Name}</Text>
-                  <Text className="ml-2 mt-1 font-extrabold">₱{item.Price}</Text>
-                  <View className="left-24 bottom-4 flex flex-row px-4">
-                    <Entypo name="star" size={12} color="yellow" />
-                    <Text className="text-xs font-bold">{item.Sales}sold</Text>
+                  <View className="bg-white h-16 rounded-b-xl">
+                    <Text className="text-center mt-1 font-semibold">{item.product_Name}</Text>
+                    <Text className="ml-2 mt-1 font-extrabold">₱{item.Price}</Text>
+                    <View className="left-16 bottom-4 flex flex-row px-4">
+                      <Entypo name="star" size={12} color="yellow" />
+                      <Text className="text-xs font-bold">{item.Sales}sold</Text>
+                    </View>
                   </View>
                 </View>
-              </View>
               </TouchableOpacity>
             ))
           ) : (

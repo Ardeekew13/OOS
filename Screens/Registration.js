@@ -5,119 +5,133 @@ import {
   View,
   TextInput,
   TouchableOpacity,
-  ScrollView,
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Platform,
-  Keyboard
+  Keyboard,
+  Alert,
+  ScrollView
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from './firebaseConfig';
+import { SafeAreaView } from "react-native-safe-area-context";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { addDoc, collection } from "firebase/firestore";
+import { db } from "./firebaseConfig";
 
 export default function Registration() {
-  const [fname, setFname] = useState("");
-  const [lname, setLname] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [mobile, setMobile] = useState("");
+  const [Fname, setFname] = useState("");
+  const [Lname, setLname] = useState("");
+  const [address, setAddress] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
-  const auth = getAuth();
 
   const handleRegisterPress = async () => {
-    try {
-      if (password !== confirmPassword) {
-        console.error("Passwords do not match");
-        return;
-      }
+    if (!email || !password || !confirmPassword || !mobile || !Fname || !Lname || !address) {
+      Alert.alert('Invalid Input', 'All fields are required.');
+      return;
+    }
 
+    if (!validateEmail(email)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+
+    if (mobile.length !== 11 || !mobile.startsWith("09")) {
+      Alert.alert('Invalid Mobile Number', 'Mobile number must start with "09" and be 11 digits long.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Passwords Mismatch', 'Password and Confirm Password fields do not match.');
+      return;
+    }
+
+    setLoading(true); // Show loading indicator during registration
+
+    try {
+      // Create user with Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Save user information to Firestore
-      await setDoc(doc(db, "Users", user.uid), {
-        Fname: fname,
-        Lname: lname,
-        email: email,
-        mobile: mobile,
-        created_at: serverTimestamp(),
-        type:"buyer"
+      // Save additional user data to Firestore
+      await addDoc(collection(db, 'Users'), {
+        email,
+        mobile,
+        Fname,
+        Lname,
+        address,
+        type:"Buyer",
+        created_at: new Date().toISOString()
       });
 
-      console.log('Registration successful');
+      setLoading(false); // Hide loading indicator
+      Alert.alert('Registration Successful', 'You have successfully registered.');
+      navigation.navigate('Login'); // Navigate to the login screen
     } catch (error) {
-      console.error("Error registering user:", error.message);
+      setLoading(false); // Hide loading indicator
+      Alert.alert('Registration Error', error.message);
     }
   };
 
-  const handleLogInPress = () => {
-    navigation.navigate("Login");
+  const validateEmail = (email) => {
+    // Email validation regex pattern
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailPattern.test(email);
   };
-
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1 }}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView contentContainerClassName="flex-grow">
-          <SafeAreaView className="flex-1 bg-[#FFFAFA]">
-            <View className="flex-1">
+        <SafeAreaView className="flex">
+          <ScrollView>
+            <View className="bg-[#FFFAFA] h-full flex ">
               <Image
-                className="w-full h-60"
+                className="w-full h-64"
                 source={require("./Images/Login2.png")}
               />
-              <View className="px-3">
+              <View className="px-3 mt-5">
                 <Text className="text-4xl font-bold text-[#8bcff1] mb-5">
-                  Registration
+                  Register
                 </Text>
                 <View>
                   <Text className="font-bold my-2">First Name</Text>
                   <TextInput
                     className="border-2 px-2 py-1 rounded-[15px] mb-2 h-12 "
-                    placeholder="Enter your first name"
-                    value={fname}
-                    onChangeText={(fname) => setFname(fname)}
+                    placeholder="Enter your First Name"
+                    value={Fname}
+                    onChangeText={(Fname) => setFname(Fname)}
                   />
                 </View>
                 <View>
                   <Text className="font-bold my-2">Last Name</Text>
                   <TextInput
                     className="border-2 px-2 py-1 rounded-[15px] mb-2 h-12 "
-                    placeholder="Enter your last name"
-                    value={lname}
-                    onChangeText={(lname) => setLname(lname)}
+                    placeholder="Enter your Last Name"
+                    value={Lname}
+                    onChangeText={(Lname) => setLname(Lname)}
                   />
                 </View>
                 <View>
                   <Text className="font-bold my-2">Email</Text>
                   <TextInput
                     className="border-2 px-2 py-1 rounded-[15px] mb-2 h-12 "
-                    placeholder="Enter your email address"
+                    placeholder="Enter your Email"
                     value={email}
                     onChangeText={(email) => setEmail(email)}
                   />
                 </View>
                 <View>
-                  <Text className="font-bold my-2">Mobile Number</Text>
-                  <TextInput
-                    className="border-2 px-2 py-1 rounded-[15px] mb-2 h-12 "
-                    placeholder="Enter your mobile number"
-                    value={mobile}
-                    onChangeText={(mobile) => setMobile(mobile)}
-                    keyboardType="phone-pad"
-                  />
-                </View>
-                <View>
                   <Text className="font-bold my-2">Password</Text>
                   <TextInput
-                    secureTextEntry
-                    className="border-2 px-2 py-1 rounded-[15px] mb-2 h-12 "
-                    placeholder="Enter your password"
+                    secureTextEntry={true}
+                    className="border-2 px-2 py-1 rounded-[15px] h-12  "
+                    placeholder="Enter your Password"
                     value={password}
                     onChangeText={(password) => setPassword(password)}
                   />
@@ -125,29 +139,47 @@ export default function Registration() {
                 <View>
                   <Text className="font-bold my-2">Confirm Password</Text>
                   <TextInput
-                    secureTextEntry
-                    className="border-2 px-2 py-1 rounded-[15px] mb-2 h-12 "
-                    placeholder="Confirm your password"
+                    secureTextEntry={true}
+                    className="border-2 px-2 py-1 rounded-[15px] h-12  "
+                    placeholder="Confirm your Password"
                     value={confirmPassword}
                     onChangeText={(confirmPassword) => setConfirmPassword(confirmPassword)}
                   />
                 </View>
                 <View>
-                  <TouchableOpacity className="bg-[#24255F] rounded-full mt-5 h-12 flex justify-center" onPress={handleRegisterPress}>
+                  <Text className="font-bold my-2">Mobile Number</Text>
+                  <TextInput
+                    keyboardType="numeric"
+                    className="border-2 px-2 py-1 rounded-[15px] h-12  "
+                    placeholder="Enter your Mobile Number"
+                    value={mobile}
+                    onChangeText={(mobile) => setMobile(mobile)}
+                  />
+                </View>
+                <View>
+                  <Text className="font-bold my-2">Address</Text>
+                  <TextInput
+                    className="border-2 px-2 py-1 rounded-[15px] h-12  "
+                    placeholder="Enter your Address"
+                    value={address}
+                    onChangeText={(address) => setAddress(address)}
+                  />
+                </View>
+                <View>
+                  <TouchableOpacity className="bg-[#24255F]  rounded-full mt-8 h-12 flex justify-center" onPress={handleRegisterPress}>
                     <Text className="text-white text-center ">Register</Text>
                   </TouchableOpacity>
                 </View>
-                <View className="flex-row justify-center mb-20 mt-5">
-                  <Text className="text-center flex">
-                    Already have an account? </Text>
-                  <TouchableOpacity onPress={handleLogInPress}>
-                    <Text className="font-bold underline">Log in here</Text>
+                <View className="flex-row justify-center mt-4">
+                  <Text className=" text-center ">Already have an account?</Text>
+                  <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+                    <Text className="font-bold underline  "> Login here</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
-          </SafeAreaView>
-        </ScrollView>
+          </ScrollView>
+        </SafeAreaView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
