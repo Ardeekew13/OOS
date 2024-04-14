@@ -1,53 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
-import { getDocs, collection, query, where } from 'firebase/firestore';
-import app from './firebaseConfig';
-import { getFirestore } from 'firebase/firestore';
-import { getDownloadURL, ref, getStorage } from 'firebase/storage';
-import Entypo from '@expo/vector-icons/Entypo';
-import { useNavigation } from "@react-navigation/native";
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from './firebaseConfig';
 
-const db = getFirestore(app);
-const storage = getStorage(app);
-
-function ShellProducts({ category }) {
-  const [shellData, setShellData] = useState([]);
+const ProductListing = () => {
+  const [products, setProducts] = useState([]);
   const navigation = useNavigation();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const productsRef = collection(db, 'Products');
-        const q = query(productsRef, where('Category', '==', 'Shellfish'));
-
-        const snapshot = await getDocs(q);
-
-        const data = [];
-        for (const doc of snapshot.docs) {
-          const product = doc.data();
-
-          const storageRef = ref(storage, product.image);
-          const imageURL = await getDownloadURL(storageRef);
-
-          data.push({
-            id: doc.id,
-            ...product,
-            image: imageURL,
-          });
-        }
-
-        setShellData(data);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
+    const fetchProducts = async () => {
+      const querySnapshot = await getDocs(collection(db, 'Products'));
+      const productsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setProducts(productsData);
     };
 
-    fetchData();
+    fetchProducts();
   }, []);
 
-  const navigateToProductDetails = (product) => {
-    // Navigate to ProductDetails screen and pass the product data
-    navigation.navigate('ProductDetails', { product });
+  const navigateToProductDetails = (item) => {
+    // Navigate to product details screen with the selected item
+    navigation.navigate('ProductDetails', { productId: item.id });
   };
 
   return (
@@ -64,8 +37,8 @@ function ShellProducts({ category }) {
           </Text>
         </View>
         <View className="flex flex-row justify-center items-center flex-wrap rounded-t">
-          {shellData.length > 0 ? (
-            shellData.map((item) => (
+          {products.length > 0 ? (
+            products.map((item) => (
               <TouchableOpacity
                 key={item.id}
                 onPress={() => navigateToProductDetails(item)}
@@ -84,10 +57,10 @@ function ShellProducts({ category }) {
 
                   <View className="bg-white h-16 rounded-b-xl">
                     <Text className="text-center mt-1 font-semibold">{item.product_Name}</Text>
-                    <Text className="ml-2 mt-1 font-extrabold">₱{item.Price}</Text>
+                    <Text className="ml-2 mt-1 font-extrabold">₱{item.price}</Text>
                     <View className="left-16 bottom-4 flex flex-row px-4">
                       <Entypo name="star" size={12} color="yellow" />
-                      <Text className="text-xs font-bold">{item.Sales}sold</Text>
+                      <Text className="text-xs font-bold">{item.sales}sold</Text>
                     </View>
                   </View>
                 </View>
@@ -100,6 +73,6 @@ function ShellProducts({ category }) {
       </SafeAreaView>
     </ScrollView>
   );
-}
+};
 
-export default ShellProducts;
+export default ProductListing;

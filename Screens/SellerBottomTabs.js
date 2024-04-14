@@ -49,4 +49,4 @@ function SellerBottomTabs() {
   );
 }
 
-export default BottomTabs;
+export default SellerBottomTabs;

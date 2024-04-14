@@ -74,7 +74,7 @@ function Orders() {
       </View>
       <View className="bg-[#ffffff] w-64 h-12 bottom-4 mx-auto rounded-md flex justify-center ">
         <Text className="text-center text-lg font-bold text-[#24255F] tracking-tight">
-          My Orders
+          Orders
         </Text>
       </View>
       <View className="bg-[#ffffff] p-2 flex-row">
@@ -101,7 +101,7 @@ function Orders() {
         {orders.map(order => (
           <View key={order.id} className="bg-white p-4 mb-4">
             {order.items.map(item => (
-              <View key={item.id} className="flex-row space-x-2">
+              <View key={item.id} className="flex-row space-x-2 m-2">
               <View>
               <Image
               source={{ uri: item.image }} 

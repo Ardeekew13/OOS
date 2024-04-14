@@ -96,7 +96,6 @@ const Checkout = ({ route }) => {
             firstName: Fname || '', // First name from userData
             lastName: Lname || '', // Last name from userData
             items: selectedItems, // Selected items
-            quantityOrdered: selectedItems.reduce((acc, item) => acc + item.qtyOrdered, 0), // Total quantity ordered
             totalPrice: totalWithDelivery, // Total price including delivery fee
             deliveryFee: 50, // Delivery fee
             deliveryInfo: { address, phoneNumber }, // Delivery information
