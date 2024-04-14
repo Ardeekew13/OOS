@@ -4,6 +4,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db, storage } from './firebaseConfig'; // Import storage from firebaseConfig
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function EditProduct({ route, navigation }) {
   const { productData } = route.params;
@@ -72,21 +73,53 @@ export default function EditProduct({ route, navigation }) {
     }
   };
   
-  const processImageResult = (result) => {
+  const processImageResult = async (result) => {
     if (!result.cancelled && result.assets.length > 0 && result.assets[0].uri) {
       const uri = result.assets[0].uri; // Get the URI from the assets array
       // Handle the image processing here
-      // This is where you would handle the image URI and initiate the upload task
-  
-      // Update the image state with the new URI
-      setImage(uri);
+      setLoading(true); // Set loading state to true during image upload
+      try {
+        // Upload the selected image file and get its download URL
+        const downloadURL = await uploadImageAndGetURL(uri);
+        if (downloadURL) {
+          // Update the image state with the new download URL
+          setImage(downloadURL);
+        } else {
+          console.error('Failed to get download URL for the uploaded image.');
+          Alert.alert('Error', 'Failed to upload image. Please try again later.');
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        Alert.alert('Error', 'Failed to upload image. Please try again later.');
+      } finally {
+        setLoading(false); // Set loading state to false after image processing
+      }
     } else {
       console.error("Error selecting image: URI is null or undefined.");
       Alert.alert('Error', 'Failed to select image. Please try again later.');
     }
-    setLoading(false); // Set loading state to false after processing
   };
+  const uploadImageAndGetURL = async (uri) => {
+    try {
+      // Create a reference to the storage location
+      const storageRef = ref(storage, 'images/' + Date.now()); // Use a unique filename
+      
+      // Convert URI to Blob
+      const response = await fetch(uri);
+      const blob = await response.blob();
   
+      // Upload the file to the storage location
+      await uploadBytes(storageRef, blob);
+  
+      // Get the download URL for the uploaded file
+      const downloadURL = await getDownloadURL(storageRef);
+      
+      return downloadURL;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+  };
   return (
     <SafeAreaView>
       <ScrollView>

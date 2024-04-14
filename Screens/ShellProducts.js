@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Image } from 'r
 import { useNavigation } from '@react-navigation/native';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from './firebaseConfig';
+import Entypo from '@expo/vector-icons/Entypo';
 
 const ProductListing = () => {
   const [products, setProducts] = useState([]);
