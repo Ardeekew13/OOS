@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, where, query } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 import Entypo from '@expo/vector-icons/Entypo';
 
@@ -11,17 +11,23 @@ const ProductListing = () => {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const querySnapshot = await getDocs(collection(db, 'Products'));
-      const productsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setProducts(productsData);
+      try {
+        const q = query(collection(db, 'Products'), where('Category', '==', 'Shellfish'));
+        const querySnapshot = await getDocs(q);
+        const productsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setProducts(productsData);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
     };
 
     fetchProducts();
   }, []);
 
-  const navigateToProductDetails = (item) => {
+
+  const navigateToProductDetails = (product) => {
     // Navigate to product details screen with the selected item
-    navigation.navigate('ProductDetails', { productId: item.id });
+    navigation.navigate('ProductDetails', { product});
   };
 
   return (
@@ -58,10 +64,10 @@ const ProductListing = () => {
 
                   <View className="bg-white h-16 rounded-b-xl">
                     <Text className="text-center mt-1 font-semibold">{item.product_Name}</Text>
-                    <Text className="ml-2 mt-1 font-extrabold">₱{item.price}</Text>
+                    <Text className="ml-2 mt-1 font-extrabold">₱{item.Price}</Text>
                     <View className="left-16 bottom-4 flex flex-row px-4">
                       <Entypo name="star" size={12} color="yellow" />
-                      <Text className="text-xs font-bold">{item.sales}sold</Text>
+                      <Text className="text-xs font-bold">{item.Sales}sold</Text>
                     </View>
                   </View>
                 </View>

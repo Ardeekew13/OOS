@@ -28,7 +28,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
   const dispatch = useDispatch(); 
-  const auth = getAuth();
+  const authentication = getAuth();
 
   const handleLoginPress = async () => {
     setLoading(true); // Set loading state to true during login process
@@ -119,6 +119,7 @@ export default function Login() {
               <View>
                 <Text className="font-bold my-2">Password</Text>
                 <TextInput
+                  secureTextEntry={true}
                   className="border-2 px-2 py-1 rounded-[15px] h-12  "
                   placeholder="Enter your Password"
                   value={password}

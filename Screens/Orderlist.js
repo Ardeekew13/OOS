@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from './firebaseConfig'; // Assuming you have configured Firebase
 
 export default function Orderlist() {
@@ -10,20 +10,15 @@ export default function Orderlist() {
   const navigation = useNavigation();
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'Orders'));
-        const fetchedOrders = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setOrders(fetchedOrders);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching orders:', error);
-        setLoading(false);
-      }
-    };
+    const unsubscribe = onSnapshot(collection(db, 'Orders'), (snapshot) => {
+      const fetchedOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setOrders(fetchedOrders);
+      setLoading(false);
+    });
 
-    fetchOrders();
+    return () => unsubscribe(); // Cleanup function to unsubscribe from the snapshot listener
   }, []);
+
 
   const handleOrderPress = (order) => {
     // Navigate to Order Details screen and pass the order data as route params

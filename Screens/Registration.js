@@ -14,9 +14,10 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { addDoc, collection } from "firebase/firestore";
-import { db } from "./firebaseConfig";
+import { createUserWithEmailAndPassword } from "firebase/auth"; 
+import { addDoc, collection, doc, setDoc  } from "firebase/firestore"; // Import 'doc' for document reference
+import { db, authentication } from "./firebaseConfig"; // Update import to use 'authentication'
+
 
 export default function Registration() {
   const [email, setEmail] = useState("");
@@ -35,16 +36,25 @@ export default function Registration() {
       return;
     }
 
+    // Validate email
     if (!validateEmail(email)) {
       Alert.alert('Invalid Email', 'Please enter a valid email address.');
       return;
     }
 
+    // Validate mobile number
     if (mobile.length !== 11 || !mobile.startsWith("09")) {
       Alert.alert('Invalid Mobile Number', 'Mobile number must start with "09" and be 11 digits long.');
       return;
     }
 
+    // Check if password and confirm password match
+    if (password.length < 6) {
+      Alert.alert('Password Too Short', 'Password must be at least 6 characters long.');
+      return;
+    }
+
+    // Check if password and confirm password match
     if (password !== confirmPassword) {
       Alert.alert('Passwords Mismatch', 'Password and Confirm Password fields do not match.');
       return;
@@ -54,11 +64,11 @@ export default function Registration() {
 
     try {
       // Create user with Firebase Authentication
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(authentication, email, password);
       const user = userCredential.user;
 
-      // Save additional user data to Firestore
-      await addDoc(collection(db, 'Users'), {
+      // Save additional user data to Firestore with document ID as user ID
+      await setDoc(doc(db, 'Users', user.uid), { // Set document ID to user UID
         email,
         mobile,
         Fname,
@@ -82,6 +92,7 @@ export default function Registration() {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailPattern.test(email);
   };
+
 
   return (
     <KeyboardAvoidingView

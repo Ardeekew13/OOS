@@ -93,7 +93,7 @@ function ProductDetails({ route }) {
         </View>
 
         <View className="">
-          <Text>Stock Available: {product.qty}</Text>
+          <Text>Stock Available: {product.qty}kg</Text>
           <Text className="mt-4 font-bold">Description:</Text>
           <Text className="font-light mt-2">{product.Description}</Text>
         </View>

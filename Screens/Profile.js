@@ -1,4 +1,3 @@
-// Profile.js
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -8,7 +7,12 @@ import {
   Modal,
   TextInput,
   Button,
+  StyleSheet,
   SafeAreaView,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Alert,
+  ActivityIndicator
 } from "react-native";
 import {
   getAuth,
@@ -16,7 +20,7 @@ import {
   signOut,
   updatePassword,
 } from "firebase/auth";
-import { getDoc, doc, getFirestore } from "firebase/firestore";
+import { getDoc, doc, getFirestore, updateDoc } from "firebase/firestore";
 import { AntDesign, MaterialIcons, FontAwesome } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
@@ -26,7 +30,17 @@ function Profile() {
   const [userData, setUserData] = useState(null);
   const navigation = useNavigation();
   const [showModal, setShowModal] = useState(false);
+  const [showModal1, setShowModal1] = useState(false);
   const [newPassword, setNewPassword] = useState("");
+  const [newEmail, setNewEmail] = useState(userData ? userData.email : "");
+  const [newFirstName, setNewFirstName] = useState(userData ? userData.Fname : "");
+  const [newLastName, setNewLastName] = useState(userData ? userData.Lname : "");
+  const [newMobile, setNewMobile] = useState(userData ? userData.mobile : "");
+  const [emailError, setEmailError] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [mobileError, setMobileError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -40,16 +54,20 @@ function Profile() {
     const fetchUserData = async () => {
       const db = getFirestore();
       if (currentUser) {
-        // Assuming you have a 'users' collection in Firestore
         const userDocRef = doc(db, "Users", currentUser.uid);
-
+  
         try {
           const userDocSnap = await getDoc(userDocRef);
-
+  
           if (userDocSnap.exists()) {
             const fetchedUserData = userDocSnap.data();
             setUserData(fetchedUserData);
-            console.log(userData);
+  
+            // Initialize state variables with current user data if available
+            setNewEmail(fetchedUserData.email);
+            setNewFirstName(fetchedUserData.Fname);
+            setNewLastName(fetchedUserData.Lname);
+            setNewMobile(fetchedUserData.mobile);
           } else {
             console.error("User document not found.");
           }
@@ -58,7 +76,7 @@ function Profile() {
         }
       }
     };
-
+  
     fetchUserData();
   }, [currentUser]);
 
@@ -74,17 +92,71 @@ function Profile() {
   const handleChangePassword = async () => {
     try {
       await updatePassword(auth.currentUser, newPassword);
-      // Close the modal after password change
       setShowModal(false);
-      // Optionally, you can provide feedback to the user that the password has been changed successfully.
     } catch (error) {
       console.error("Error changing password:", error);
-      // Optionally, you can provide feedback to the user that an error occurred during password change.
+    }
+  };
+
+  const handleUpdateUserInfo = async () => {
+    
+    try {
+      setIsLoading(true); 
+    // Validate email
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(newEmail)) {
+      setEmailError("Invalid email format");
+      return;
+    } else {
+      setEmailError("");
+    }
+
+    // Validate name (should not contain numbers)
+    const namePattern = /^[a-zA-Z]+$/;
+    if (!namePattern.test(newFirstName) || !namePattern.test(newLastName)) {
+      setNameError("Name should not contain numbers");
+      return;
+    } else {
+      setNameError("");
+    }
+
+    // Validate mobile number (should start with 09 and have 11 digits including 09)
+    const mobilePattern = /^09\d{9}$/;
+    if (!mobilePattern.test(newMobile)) {
+      setMobileError("Mobile number should start with 09 and have 11 digits");
+      return;
+    } else {
+      setMobileError("");
+    }
+
+    // If all validations pass, update user info
+   
+    console.log("Updating user info...");
+
+    const db = getFirestore();
+    const userDocRef = doc(db, "Users", currentUser.uid);
+    await updateDoc(userDocRef, {
+      email: newEmail,
+      Fname: newFirstName,
+      Lname: newLastName,
+      mobile: newMobile,
+    });
+    
+    console.log("User information updated successfully!");
+      // Close the modal after updating user info
+      setShowModal1(false);
+    } catch (error) {
+      console.error("Error updating user info:", error);
+    }
+    finally {
+      setIsLoading(false); // Set isLoading to false to hide the activity indicator
     }
   };
 
   return (
     <SafeAreaView>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+<View>
       <View className="bg-[#24255F] h-28"></View>
       <View className="bg-[#ffffff] w-64 h-12 bottom-4 mx-auto rounded-md flex justify-center ">
         <Text className="text-center text-lg font-bold text-[#24255F] tracking-tight">
@@ -181,6 +253,101 @@ function Profile() {
           </View>
         </Modal>
         <TouchableOpacity
+        onPress={() => setShowModal1(true)}
+        style={{
+          backgroundColor: "#6495ED",
+          padding: 10,
+          borderRadius: 5,
+          alignItems: "center",
+          marginTop: 10,
+        }}
+      >
+        <Text style={{ color: "white", fontSize: 16 }}>Settings</Text>
+      </TouchableOpacity>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showModal1}
+        onRequestClose={() => setShowModal1(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "rgba(0,0,0,0.5)",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "white",
+              padding: 20,
+              borderRadius: 10,
+              width: "80%",
+            }}
+          >
+            <Text style={{ fontSize: 18, marginBottom: 10 }}>
+              Update User Information
+            </Text>
+            {/* New Email input */}<Text>Email</Text>
+            <TextInput
+              placeholder="New Email"
+              style={styles.input}
+              value={newEmail}
+              onChangeText={setNewEmail}
+            />
+            {/* New First Name input */}
+            <Text>First Name</Text>
+            <TextInput
+              placeholder="New First Name"
+              style={styles.input}
+              value={newFirstName}
+              onChangeText={setNewFirstName}
+            />
+            {/* New Last Name input */}
+            <Text>Last Name</Text>
+            <TextInput
+              placeholder="New Last Name"
+              style={styles.input}
+              value={newLastName}
+              onChangeText={setNewLastName}
+            />
+            {/* New Mobile input */}
+            <Text>Mobile Number</Text>
+            <TextInput
+              placeholder="New Mobile"
+              style={styles.input}
+              value={newMobile}
+              onChangeText={setNewMobile}
+            />
+            
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              {/* Update Info button */}
+              {isLoading && (
+                <View style={styles.activityIndicator}>
+                  <ActivityIndicator size="large" color="#24255F" />
+                </View>
+              )}
+              <TouchableOpacity
+                onPress={handleUpdateUserInfo}
+                style={styles.button}
+              >
+            
+            
+                <Text style={{ color: "white" }}>Update Info</Text>
+              </TouchableOpacity>
+              
+              {/* Cancel button */}
+              <Button
+                title="Cancel"
+                onPress={() => setShowModal1(false)}
+                color="red"
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+        <TouchableOpacity
           onPress={handleLogout}
           style={{
             backgroundColor: "#24255F",
@@ -192,8 +359,27 @@ function Profile() {
           <Text style={{ color: "white", fontSize: 16 }}>Logout</Text>
         </TouchableOpacity>
       </View>
+      </View>
+    </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 }
 
 export default Profile;
+const styles = {
+  input: {
+    borderWidth: 1,
+    borderColor: "gray",
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 5,
+  },
+  button: {
+    backgroundColor: "#24255F",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    flex: 1,
+    marginRight: 5,
+  },
+};

@@ -29,10 +29,30 @@ const OrderDetails = ({ route, navigation }) => {
 
   const handleAccept = async () => {
     try {
+      // Update order status to "Ongoing"
       await updateDoc(doc(db, "Orders", order.id), {
         status: "Ongoing",
       });
-      console.log("Order status updated to Ongoing");
+  
+      // Update product quantities and sales for each item in the order
+      for (const item of order.items) {
+        // Update product sales
+        const productDocRef = doc(db, "Products", item.productId);
+        const productDoc = await getDoc(productDocRef);
+        if (productDoc.exists()) {
+          const productData = productDoc.data();
+          const updatedSales = productData.sales + 1;
+          await updateDoc(productDocRef, { sales: updatedSales });
+        } else {
+          console.error("Product not found:", item.productId);
+        }
+  
+        // Update product quantity
+        const updatedQuantity = item.quantity - item.qtyOrdered; // Subtract ordered quantity
+        await updateDoc(productDocRef, { quantity: updatedQuantity });
+      }
+  
+      console.log("Order status updated to Ongoing, product sales, and quantities updated");
     } catch (error) {
       console.error("Error updating order status:", error);
     }

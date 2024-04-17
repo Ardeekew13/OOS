@@ -76,7 +76,7 @@ function Home() {
                       <Text className="ml-2 mt-1 font-extrabold">₱{item.Price}</Text>
                       <View className="left-24 bottom-4 flex flex-row px-4">
                         <Entypo name="star" size={12} color="yellow" />
-                        <Text className=" text-[8px] font-bold">{item.Sales}sold</Text>
+                        <Text className=" text-[12px] font-bold">{item.Sales}sold</Text>
                       </View>
                     </View>
                   </View>

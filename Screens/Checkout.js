@@ -16,6 +16,7 @@ const Checkout = ({ route }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [hasDeliveryInfo, setHasDeliveryInfo] = useState(false);
   const [loading, setLoading] = useState(false); // State variable for activity indicator
+  const [editableDeliveryInfo, setEditableDeliveryInfo] = useState(false); // State variable to toggle edit mode
 
   useEffect(() => {
     // Check if the mobile field is empty or doesn't exist in the user data
@@ -108,7 +109,7 @@ const Checkout = ({ route }) => {
   
           // Show alert when the order is successful
           Alert.alert('Order Placed', 'Your order has been placed successfully!', [
-            { text: 'OK', onPress: () => navigation.navigate('Orders') }
+            { text: 'OK', onPress: () => navigation.navigate('BottomTabs', { screen: 'Orders' }) }
           ]);
         } else {
           console.log('User has no cart items or user data not available.');
@@ -123,6 +124,27 @@ const Checkout = ({ route }) => {
       console.error('Error updating product quantities, removing cart items, and creating order:', error);
     } finally {
       setLoading(false); // Hide activity indicator after order processing
+    }
+  };
+
+  // Function to toggle edit mode for delivery information
+  const toggleEditMode = () => {
+    setEditableDeliveryInfo(!editableDeliveryInfo);
+  };
+
+  // Function to save edited delivery information
+  const saveDeliveryInfo = async () => {
+    try {
+      // Update delivery information in Firestore
+      const userRef = doc(firestore, 'Users', user.uid);
+      await updateDoc(userRef, { deliveryInfo: { address, phoneNumber } });
+      // Notify user that information is saved
+      Alert.alert('Delivery Info Updated', 'Your delivery information has been updated successfully.');
+      // Exit edit mode
+      setEditableDeliveryInfo(false);
+    } catch (error) {
+      console.error('Error updating delivery information:', error);
+      Alert.alert('Error', 'Failed to update delivery information. Please try again later.');
     }
   };
 
@@ -145,10 +167,35 @@ const Checkout = ({ route }) => {
         <Text className="font-bold text-xl">Delivery information</Text>
         {hasDeliveryInfo ? (
           <View>
-            <Text className="font-bold">Delivery Address:</Text>
-            <Text>{address}</Text>
-            <Text className="font-bold">Phone Number:</Text>
-            <Text>{phoneNumber}</Text>
+            {editableDeliveryInfo ? ( // Render editable fields if in edit mode
+              <View>
+                <TextInput
+                  style={{ marginTop: 20, padding: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 5 }}
+                  placeholder="Delivery Address"
+                  value={address}
+                  onChangeText={setAddress}
+                />
+                <TextInput
+                  style={{ marginTop: 20, padding: 10, borderWidth: 1, borderColor: '#ccc', borderRadius: 5 }}
+                  placeholder="Phone Number"
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                />
+                <TouchableOpacity onPress={saveDeliveryInfo}>
+                  <Text style={{ color: '#24255F', fontWeight: 'bold', marginTop: 10 }}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View>
+                <Text className="font-bold">Delivery Address:</Text>
+                <Text>{address}</Text>
+                <Text className="font-bold">Phone Number:</Text>
+                <Text>{phoneNumber}</Text>
+                <TouchableOpacity onPress={toggleEditMode}>
+                  <Text style={{ color: '#24255F', fontWeight: 'bold', marginTop: 10 }}>Edit</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         ) : (
           <View>
