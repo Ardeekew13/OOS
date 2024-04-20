@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image } from "react-native";
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { View, Text, ScrollView, TouchableOpacity, Image, Button } from "react-native";
+import { collection, query, where, onSnapshot, updateDoc, doc } from 'firebase/firestore';
 import { getAuth } from "firebase/auth";
 import { db } from "./firebaseConfig";
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,17 +11,21 @@ function Orders() {
 
   const auth = getAuth();
   useEffect(() => {
-    const user = auth.currentUser;
-    if (user) {
-      let ordersRef = collection(db, 'Orders');
-      if (activeTab !== 'All') {
-        ordersRef = query(ordersRef, where('status', '==', activeTab));
-      }
+  const user = auth.currentUser;
+  if (user) {
+    let ordersRef = collection(db, 'Orders');
+    if (activeTab !== 'All') {
+      ordersRef = query(ordersRef, where('status', '==', activeTab));
+    }
+
+    // Add a where clause to filter orders by userId
+    ordersRef = query(ordersRef, where('userID', '==', user.uid));
   
       const unsubscribe = onSnapshot(ordersRef, snapshot => {
         const fetchedOrders = [];
         snapshot.forEach(doc => {
           const orderData = doc.data();
+          console.log('Orders:', fetchedOrders);
           const orderItems = orderData.items.map(item => ({
             Availability: item.Availability,
             Category: item.Category,
@@ -63,13 +67,23 @@ function Orders() {
     }
   }, [auth, activeTab]);
 
+  const handleCancelOrder = async (orderId) => {
+    try {
+      await updateDoc(doc(db, 'Orders', orderId), {
+        status: 'Cancelled'
+      });
+      console.log('Order cancelled successfully.');
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+    }
+  };
 
   const handleTabChange = tab => {
     setActiveTab(tab);
   };
 
   return (
-    <SafeAreaView>
+    <SafeAreaView style={{ flex: 1 }}>
       <View className="bg-[#24255F] h-28">
       </View>
       <View className="bg-[#ffffff] w-64 h-12 bottom-4 mx-auto rounded-md flex justify-center ">
@@ -94,13 +108,12 @@ function Orders() {
       <TouchableOpacity onPress={() => handleTabChange('Cancelled')} className={`px-4 ${activeTab === 'Cancelled' ? 'text-blue-500' : 'text-black'}`}>
         <Text>Cancelled</Text>
       </TouchableOpacity>
-     
     </ScrollView>
       </View>
-      <ScrollView className="mt-2">
+      <ScrollView className="mt-2" style={{ flex: 1 }}>
         {orders.map(order => (
-          <View key={order.id} className="bg-white p-4 mb-4">
-            {order.items.map(item => (
+          <View key={order.id} className="bg-white p-4 mb-5">
+            {order.items.map((item, index) => (
               <View key={item.id} className="flex-row space-x-2 m-2">
               <View>
               <Image
@@ -112,6 +125,9 @@ function Orders() {
                 <Text className="font-bold">{item.product_Name}</Text>      
               <Text>Order Total: ₱{order.totalPrice}</Text>
               <Text>Status: {order.status}</Text>
+              {order.status === 'Pending' && index === 0 && (
+                <Button title="Cancel" onPress={() => handleCancelOrder(order.id)} />
+              )}
               </View>
               </View>
               

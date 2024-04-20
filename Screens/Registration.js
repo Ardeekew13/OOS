@@ -15,8 +15,8 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { createUserWithEmailAndPassword } from "firebase/auth"; 
-import { addDoc, collection, doc, setDoc  } from "firebase/firestore"; // Import 'doc' for document reference
-import { db, authentication } from "./firebaseConfig"; // Update import to use 'authentication'
+import { addDoc, collection, doc, setDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
+import { db, authentication } from "./firebaseConfig";
 
 
 export default function Registration() {
@@ -27,11 +27,12 @@ export default function Registration() {
   const [Fname, setFname] = useState("");
   const [Lname, setLname] = useState("");
   const [address, setAddress] = useState("");
+  const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
 
   const handleRegisterPress = async () => {
-    if (!email || !password || !confirmPassword || !mobile || !Fname || !Lname || !address) {
+    if (!email || !password || !confirmPassword || !mobile || !Fname || !Lname || !address || !username) {
       Alert.alert('Invalid Input', 'All fields are required.');
       return;
     }
@@ -63,6 +64,15 @@ export default function Registration() {
     setLoading(true); // Show loading indicator during registration
 
     try {
+      // Check if username already exists
+      const usernameQuery = query(collection(db, "Users"), where("username", "==", username));
+      const usernameSnapshot = await getDocs(usernameQuery);
+      if (!usernameSnapshot.empty) {
+        setLoading(false); // Hide loading indicator
+        Alert.alert('Username Taken', 'The username is already taken. Please choose a different one.');
+        return;
+      }
+
       // Create user with Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(authentication, email, password);
       const user = userCredential.user;
@@ -74,8 +84,9 @@ export default function Registration() {
         Fname,
         Lname,
         address,
+        username, // Save username
         type:"Buyer",
-        created_at: new Date().toISOString()
+        created_at: serverTimestamp()
       });
 
       setLoading(false); // Hide loading indicator
@@ -177,9 +188,24 @@ export default function Registration() {
                   />
                 </View>
                 <View>
-                  <TouchableOpacity className="bg-[#24255F]  rounded-full mt-8 h-12 flex justify-center" onPress={handleRegisterPress}>
+                  <Text className="font-bold my-2">Username</Text>
+                  <TextInput
+                    className="border-2 px-2 py-1 rounded-[15px] h-12  "
+                    placeholder="Choose a Username"
+                    value={username}
+                    onChangeText={(username) => setUsername(username)}
+                  />
+                </View>
+                <View>
+                <View>
+                <TouchableOpacity className="bg-[#24255F]  rounded-full mt-8 h-12 flex justify-center" onPress={handleRegisterPress}>
+                  {loading ? (
+                    <ActivityIndicator color="#ffffff" />
+                  ) : (
                     <Text className="text-white text-center ">Register</Text>
-                  </TouchableOpacity>
+                  )}
+                </TouchableOpacity>
+              </View>
                 </View>
                 <View className="flex-row justify-center mt-4">
                   <Text className=" text-center ">Already have an account?</Text>
