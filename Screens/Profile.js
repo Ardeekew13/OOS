@@ -286,9 +286,12 @@ function Profile() {
           - Ability to view order history, track shipments, and initiate returns or exchange
         </Text>
       </View>
-      <TouchableOpacity onPress={toggleRolesModal} style={styles.closeButton}>
-        <Text style={{ color: "white" }}>Close</Text>
-      </TouchableOpacity>
+      <TouchableOpacity
+      onPress={() => setShowRolesModal(false)}
+      style={styles.closeButton}
+    >
+      <Text style={{ color: "white" }}>Close</Text>
+    </TouchableOpacity>
     </View>
   </View>
 </Modal>

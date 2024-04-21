@@ -53,9 +53,7 @@ function SeaProducts({ category }) {
     <ScrollView>
       <SafeAreaView>
       <View className="bg-[#24255F] h-28">
-      <View className="bg-[#ffffff] h-7 w-72 top-10 flex justify-center mx-auto rounded-[24px] pl-5">
-        <Text className="">Search Product</Text>
-      </View>
+      
     </View>
     <View className="bg-[#ffffff] w-64 h-12 bottom-4 mx-auto rounded-md flex justify-center ">
       <Text className="text-center text-lg font-bold text-[#24255F] tracking-tight">
